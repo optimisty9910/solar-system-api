@@ -16,3 +16,29 @@ def get_planets():
         })
 
     return make_response(planets_response, 200)
+
+def validate_planet_id(planet_id):
+    try:
+        planet_id = int(planet_id)
+    except:
+        response = {"message": f"planet {planet_id} invalid"}
+        abort(make_response(response, 400))
+
+    for planet in planets:
+        if planet.id == planet_id:
+            return planet
+
+    response = {"message": f"planet {planet_id} not found"}
+    abort(make_response(response, 404))
+        
+
+@planet_routes.get("/<planet_id>")
+def get_one_planet(planet_id):
+    planet = validate_planet_id(planet_id)
+
+    return {
+        "id": planet.id,
+        "name": planet.name,
+        "description": planet.description,
+        "distance from sun": planet.distance_from_sun
+    }
