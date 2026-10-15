@@ -67,3 +67,46 @@ def get_one_planet(planet_id):
         "description": planet.description,
         "distance_from_sun": planet.distance_from_sun
     }
+
+@planet_routes.patch("/<planet_id>")
+def update_planet(planet_id):
+    planet = validate_planet_id(planet_id)
+
+    request_body = request.get_json(silent=True)
+
+    if not isinstance(request_body, dict):
+        return {"message": "Invalid planet data"}, 400
+
+    if "name" in request_body:
+        planet.name = request_body["name"]
+
+    if "description" in request_body:
+        planet.description = request_body["description"]
+
+    if "distance_from_sun" in request_body:
+        planet.distance_from_sun = request_body["distance_from_sun"]
+
+    db.session.commit()
+
+    response = {
+        "id": planet.id,
+        "name": planet.name,
+        "description": planet.description,
+        "distance_from_sun": planet.distance_from_sun
+    }
+
+    return response, 200
+
+
+@planet_routes.delete("/<planet_id>")
+def delete_planet(planet_id):
+    planet = validate_planet_id(planet_id)
+
+    db.session.delete(planet)
+    db.session.commit()
+
+    response = {
+        "message": f"Planet {planet_id} deleted successfully"
+    }
+
+    return response, 200
