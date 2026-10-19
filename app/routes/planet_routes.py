@@ -60,14 +60,14 @@ def validate_planet_id(planet_id):
     try:
         planet_id = int(planet_id)
     except:
-        response = {"message": f"planet {planet_id} invalid"}
+        response = {"message": f"Planet {planet_id} invalid"}
         abort(make_response(response, 400))
 
     planet = db.session.get(Planet, planet_id)
     if planet:
         return planet
 
-    response = {"message": f"planet {planet_id} not found"}
+    response = {"message": f"Planet {planet_id} not found"}
     abort(make_response(response, 404))
         
 
