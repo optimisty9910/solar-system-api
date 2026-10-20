@@ -1,28 +1,26 @@
-from flask import abort, Blueprint, make_response, request
+from flask import Blueprint, request
 from app.models.planet import Planet
-from ..db import db
+from app.db import db
+from app.route_utilities import validate_model_id
 
-planet_routes = Blueprint('planet_routes', __name__, url_prefix='/planets')
+
+planet_routes = Blueprint(
+    "planet_routes",
+    __name__,
+    url_prefix="/planets"
+)
+
 
 @planet_routes.post("")
 def create_planet():
     request_body = request.get_json()
-    name = request_body["name"]
-    description = request_body["description"]
-    distance_from_sun = request_body["distance_from_sun"]
 
-    new_planet = Planet(name=name, description=description, distance_from_sun=distance_from_sun)
+    new_planet = Planet.from_dict(request_body)
+
     db.session.add(new_planet)
     db.session.commit()
 
-    response = {
-        "id": new_planet.id,
-        "name": new_planet.name,
-        "description": new_planet.description,
-        "distance_from_sun": new_planet.distance_from_sun,
-    }
-
-    return response, 201
+    return new_planet.to_dict(), 201
 
 
 @planet_routes.get("")
@@ -31,60 +29,42 @@ def get_all_planets():
 
     name = request.args.get("name")
     if name:
-        query = query.filter(Planet.name.ilike(f"%{name}%"))
+        query = query.filter(
+            Planet.name.ilike(f"%{name}%")
+        )
 
     description = request.args.get("description")
     if description:
-        query = query.filter(Planet.description.ilike(f"%{description}%"))
-    
+        query = query.filter(
+            Planet.description.ilike(f"%{description}%")
+        )
+
     distance_from_sun = request.args.get("distance_from_sun")
     if distance_from_sun:
-        query = query.filter(Planet.distance_from_sun >= (distance_from_sun))
+        query = query.filter(
+            Planet.distance_from_sun >= distance_from_sun
+        )
 
     query = query.order_by(Planet.id)
     planets = db.session.scalars(query)
 
     planets_response = []
     for planet in planets:
-        planets_response.append(
-            {
-                "id": planet.id,
-                "name": planet.name,
-                "description": planet.description,
-                "distance_from_sun": planet.distance_from_sun
-            }
-        )
+        planets_response.append(planet.to_dict())
+
     return planets_response
 
-def validate_planet_id(planet_id):
-    try:
-        planet_id = int(planet_id)
-    except:
-        response = {"message": f"Planet {planet_id} invalid"}
-        abort(make_response(response, 400))
-
-    planet = db.session.get(Planet, planet_id)
-    if planet:
-        return planet
-
-    response = {"message": f"Planet {planet_id} not found"}
-    abort(make_response(response, 404))
-        
 
 @planet_routes.get("/<planet_id>")
 def get_one_planet(planet_id):
-    planet = validate_planet_id(planet_id)
+    planet = validate_model_id(Planet, planet_id)
 
-    return {
-        "id": planet.id,
-        "name": planet.name,
-        "description": planet.description,
-        "distance_from_sun": planet.distance_from_sun
-    }
+    return planet.to_dict()
+
 
 @planet_routes.patch("/<planet_id>")
 def update_planet(planet_id):
-    planet = validate_planet_id(planet_id)
+    planet = validate_model_id(Planet, planet_id)
 
     request_body = request.get_json(silent=True)
 
@@ -102,19 +82,12 @@ def update_planet(planet_id):
 
     db.session.commit()
 
-    response = {
-        "id": planet.id,
-        "name": planet.name,
-        "description": planet.description,
-        "distance_from_sun": planet.distance_from_sun
-    }
-
-    return response, 200
+    return planet.to_dict(), 200
 
 
 @planet_routes.delete("/<planet_id>")
 def delete_planet(planet_id):
-    planet = validate_planet_id(planet_id)
+    planet = validate_model_id(Planet, planet_id)
 
     db.session.delete(planet)
     db.session.commit()
